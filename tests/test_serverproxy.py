@@ -1,0 +1,128 @@
+
+from unittest import mock
+
+import pytest
+
+from async_rpc import BaseSerializer, BaseServerProxy
+
+
+class Serializer(BaseSerializer):
+
+    def initialize(self, dummy_param=None):
+        self.dummy_param = dummy_param
+
+    def prepare_request_headers(self):
+        return {
+            'Content-Type': 'application/x.foo',
+            'Accept': 'application/x.foo',
+        }
+
+    def process_response_headers(self, headers):
+        if headers['Content-Type'] != 'application/x.foo':
+            raise ValueError('Invalid content type')
+
+    def dumps(self, params, methodname):
+        return {'method': methodname, 'args': params}
+
+    def loads(self, data):
+        return data['response']
+
+
+class ServerProxy(BaseServerProxy):
+
+    serializer_cls = Serializer
+
+
+@pytest.mark.parametrize(
+    'proxy_kwargs, expected', [
+        (
+            {},
+            {'timeout': 1.0, 'max_clients': 16,
+             'user_agent':'Python async-rpc', 'keepalive_timeout': 60.0,
+             'use_dns_cache': True, 'ttl_dns_cache': 10.0}
+        ),
+        (
+            {'timeout': 0.02, 'max_clients': 32,
+             'user_agent':'AasyncRPC', 'keepalive_timeout': 120.0,
+             'use_dns_cache': False, 'ttl_dns_cache': 60.0},
+            {'timeout': 0.02, 'max_clients': 32,
+             'user_agent':'AasyncRPC', 'keepalive_timeout': 120.0,
+             'use_dns_cache': False, 'ttl_dns_cache': 60.0}
+        ),
+    ])
+def test_base_server_proxy_constructor(proxy_kwargs, expected):
+    proxy = ServerProxy('https://rpc.example.com/RPC2', **proxy_kwargs)
+    assert proxy.uri == 'https://rpc.example.com/RPC2'
+    assert proxy.host == 'rpc.example.com'
+    assert proxy.timeout == expected['timeout']
+    assert proxy.max_clients == expected['max_clients']
+    assert proxy.user_agent == expected['user_agent']
+    assert proxy.keepalive_timeout == expected['keepalive_timeout']
+    assert proxy.use_dns_cache is expected['use_dns_cache']
+    assert proxy.ttl_dns_cache == expected['ttl_dns_cache']
+    assert isinstance(proxy.serializer, Serializer)
+
+
+def test_base_server_proxy_session():
+    proxy = ServerProxy('https://rpc.example.com/RPC2')
+    assert 'session' not in vars(proxy)
+    with mock.patch('aiohttp.ClientSession') as m_client_session:
+        with mock.patch('aiohttp.TCPConnector') as m_tcp_connector:
+                with mock.patch('aiohttp.ClientTimeout') as m_client_timeout:
+                    session = proxy.session
+    assert 'session' in vars(proxy)
+    assert session == m_client_session.return_value
+    m_client_timeout.assert_called_once_with()
+    m_tcp_connector.assert_called_once_with(
+        keepalive_timeout=60,
+        limit=16,
+        use_dns_cache=True,
+        ttl_dns_cache=10)
+    m_client_session.assert_called_once_with(
+        connector=m_tcp_connector.return_value,
+        timeout=m_client_timeout.return_value,
+        raise_for_status=True,
+        auto_decompress=False)
+
+
+@pytest.mark.asyncio
+async def test_base_server_callable():
+    async def call_m(name, *args):
+        return (name, *args)
+    proxy = ServerProxy('https://rpc.example.com/RPC2')
+    with mock.patch.object(proxy, 'call', call_m):
+        res = await proxy.sum(1, 2)
+    assert res == ('sum', 1, 2)
+
+
+@pytest.mark.asyncio
+async def test_base_server_call_method():
+    session_post_m_calls = []
+    async def session_post(*args, **kwargs):
+        async def response_read():
+            return {
+                'response': 3,
+            }
+        session_post_m_calls.append((args, kwargs))
+        return mock.Mock(
+            read=response_read,
+            headers={'Content-Type': 'application/x.foo'},
+        )
+    session_post_m = mock.Mock(post=session_post)
+    proxy = ServerProxy('https://rpc.example.com/RPC2')
+    with mock.patch.dict(proxy.__dict__, {'session': session_post_m}):
+        res = await proxy.call('sum', 1, 2)
+    assert res == 3
+    assert len(session_post_m_calls) == 1
+    assert session_post_m_calls[0] == (
+        ('https://rpc.example.com/RPC2',),
+        {
+            'data': {'method': 'sum', 'args': (1, 2)},
+            'headers': {
+                'User-Agent': 'Python async-rpc',
+                'Host': 'rpc.example.com',
+                'Content-Type': 'application/x.foo',
+                'Accept': 'application/x.foo',
+            },
+        },
+    )
