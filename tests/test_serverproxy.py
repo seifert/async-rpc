@@ -1,6 +1,7 @@
 
 from unittest import mock
 
+import aiohttp
 import pytest
 
 from async_rpc import BaseSerializer, BaseServerProxy
@@ -37,17 +38,15 @@ class ServerProxy(BaseServerProxy):
     'proxy_kwargs, expected', [
         (
             {},
-            {'timeout': 1.0, 'max_clients': 16,
-             'user_agent':'Python async-rpc', 'keepalive_timeout': 60.0,
-             'use_dns_cache': True, 'ttl_dns_cache': 10.0}
+            {'timeout': 1.0, 'max_clients': 16, 'use_dns_cache': True,
+             'ttl_dns_cache': 10.0, 'user_agent':'Python async-rpc'}
         ),
         (
             {'timeout': 0.02, 'max_clients': 32,
-             'user_agent':'AasyncRPC', 'keepalive_timeout': 120.0,
+             'user_agent':'AasyncRPC',
              'use_dns_cache': False, 'ttl_dns_cache': 60.0},
-            {'timeout': 0.02, 'max_clients': 32,
-             'user_agent':'AasyncRPC', 'keepalive_timeout': 120.0,
-             'use_dns_cache': False, 'ttl_dns_cache': 60.0}
+            {'timeout': 0.02, 'max_clients': 32, 'use_dns_cache': False,
+             'ttl_dns_cache': 60.0, 'user_agent':'AasyncRPC'}
         ),
     ])
 def test_base_server_proxy_constructor(proxy_kwargs, expected):
@@ -57,9 +56,10 @@ def test_base_server_proxy_constructor(proxy_kwargs, expected):
     assert proxy.timeout == expected['timeout']
     assert proxy.max_clients == expected['max_clients']
     assert proxy.user_agent == expected['user_agent']
-    assert proxy.keepalive_timeout == expected['keepalive_timeout']
     assert proxy.use_dns_cache is expected['use_dns_cache']
     assert proxy.ttl_dns_cache == expected['ttl_dns_cache']
+    assert proxy.keepalive_timeout is None
+    assert proxy.http_version == aiohttp.HttpVersion10
     assert isinstance(proxy.serializer, Serializer)
 
 
@@ -74,15 +74,16 @@ def test_base_server_proxy_session():
     assert session == m_client_session.return_value
     m_client_timeout.assert_called_once_with()
     m_tcp_connector.assert_called_once_with(
-        keepalive_timeout=60,
+        keepalive_timeout=None,
+        force_close=True,
         limit=16,
         use_dns_cache=True,
         ttl_dns_cache=10)
     m_client_session.assert_called_once_with(
         connector=m_tcp_connector.return_value,
+        version=aiohttp.HttpVersion10,
         timeout=m_client_timeout.return_value,
-        raise_for_status=True,
-        auto_decompress=False)
+        raise_for_status=True)
 
 
 @pytest.mark.asyncio
@@ -121,6 +122,7 @@ async def test_base_server_call_method():
             'headers': {
                 'User-Agent': 'Python async-rpc',
                 'Host': 'rpc.example.com',
+                'Connection': 'close',
                 'Content-Type': 'application/x.foo',
                 'Accept': 'application/x.foo',
             },
