@@ -39,14 +39,14 @@ class ServerProxy(BaseServerProxy):
         (
             {},
             {'timeout': 1.0, 'max_clients': 16, 'use_dns_cache': True,
-             'ttl_dns_cache': 10.0, 'user_agent':'Python async-rpc'}
+             'ttl_dns_cache': 10.0, 'user_agent': 'Python async-rpc'}
         ),
         (
             {'timeout': 0.02, 'max_clients': 32,
-             'user_agent':'AasyncRPC',
+             'user_agent': 'AasyncRPC',
              'use_dns_cache': False, 'ttl_dns_cache': 60.0},
             {'timeout': 0.02, 'max_clients': 32, 'use_dns_cache': False,
-             'ttl_dns_cache': 60.0, 'user_agent':'AasyncRPC'}
+             'ttl_dns_cache': 60.0, 'user_agent': 'AasyncRPC'}
         ),
     ])
 def test_base_server_proxy_constructor(proxy_kwargs, expected):
@@ -68,8 +68,8 @@ def test_base_server_proxy_session():
     assert 'session' not in vars(proxy)
     with mock.patch('aiohttp.ClientSession') as m_client_session:
         with mock.patch('aiohttp.TCPConnector') as m_tcp_connector:
-                with mock.patch('aiohttp.ClientTimeout') as m_client_timeout:
-                    session = proxy.session
+            with mock.patch('aiohttp.ClientTimeout') as m_client_timeout:
+                session = proxy.session
     assert 'session' in vars(proxy)
     assert session == m_client_session.return_value
     m_client_timeout.assert_called_once_with()
@@ -99,6 +99,7 @@ async def test_base_server_callable():
 @pytest.mark.asyncio
 async def test_base_server_call_method():
     session_post_m_calls = []
+
     async def session_post(*args, **kwargs):
         async def response_read():
             return {
@@ -110,6 +111,7 @@ async def test_base_server_call_method():
             headers={'Content-Type': 'application/x.foo'},
         )
     session_post_m = mock.Mock(post=session_post)
+
     proxy = ServerProxy('https://rpc.example.com/RPC2')
     with mock.patch.dict(proxy.__dict__, {'session': session_post_m}):
         res = await proxy.call('sum', 1, 2)
