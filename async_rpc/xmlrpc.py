@@ -1,7 +1,7 @@
 
 import xmlrpc.client
 
-from .serverproxy import BaseSerializer, BaseServerProxy
+from . import BaseSerializer, BaseServerProxy
 
 __all__ = ['XmlRpcServerProxy']
 
@@ -21,7 +21,9 @@ class XmlRpcSerializer(BaseSerializer):
         }
 
     def process_response_headers(self, headers):
-        pass
+        ct = headers['Content-Type']
+        if ct != 'text/xml':
+            raise ValueError("Invalid response content type '{}'".format(ct))
 
     def dumps(self, params, methodname):
         return xmlrpc.client.dumps(
@@ -30,7 +32,7 @@ class XmlRpcSerializer(BaseSerializer):
 
     def loads(self, data):
         return xmlrpc.client.loads(
-            data, use_builtin_types=self.use_builtin_types)[0]
+            data, use_builtin_types=self.use_builtin_types)[0][0]
 
 
 class XmlRpcServerProxy(BaseServerProxy):
