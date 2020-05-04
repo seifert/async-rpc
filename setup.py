@@ -11,8 +11,9 @@ setup(
     author_email='jan.seifert@fotkyzcest.net',
     description='Non-blocking XML-RPC client for Python',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     license='BSD',
-    url='https://github.com/seznam/async-rpc',
+    url='https://github.com/seifert/async-rpc',
     classifiers=[
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
