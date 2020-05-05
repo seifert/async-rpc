@@ -31,7 +31,7 @@ class BaseSerializer(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def loads(self, data):
+    def loads(self, data, ct):
         pass
 
 
@@ -89,7 +89,8 @@ class BaseServerProxy(object):
                     self.uri, data=data, headers=headers)
                 data = await response.read()
             self.serializer.process_response_headers(response.headers)
-            result = self.serializer.loads(data)
+            result = self.serializer.loads(
+                data, response.headers.get('Content-Type'))
         except asyncio.TimeoutError:
             raise asyncio.TimeoutError('Timeout error')
         return result

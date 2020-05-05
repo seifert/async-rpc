@@ -25,8 +25,8 @@ class Serializer(BaseSerializer):
     def dumps(self, params, methodname):
         return {'method': methodname, 'args': params}
 
-    def loads(self, data):
-        return data['response']
+    def loads(self, data, ct):
+        return (data['response'], ct)
 
 
 class ServerProxy(BaseServerProxy):
@@ -115,7 +115,7 @@ async def test_base_server_call_method():
     proxy = ServerProxy('https://rpc.example.com/RPC2')
     with mock.patch.dict(proxy.__dict__, {'session': session_post_m}):
         res = await proxy.call('sum', 1, 2)
-    assert res == 3
+    assert res == (3, 'application/x.foo')
     assert len(session_post_m_calls) == 1
     assert session_post_m_calls[0] == (
         ('https://rpc.example.com/RPC2',),

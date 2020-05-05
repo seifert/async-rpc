@@ -30,7 +30,7 @@ class XmlRpcSerializer(BaseSerializer):
             params, methodname=methodname, encoding=self.encoding,
             allow_none=self.allow_none)
 
-    def loads(self, data):
+    def loads(self, data, unused_ct):
         return xmlrpc.client.loads(
             data, use_builtin_types=self.use_builtin_types)[0][0]
 
