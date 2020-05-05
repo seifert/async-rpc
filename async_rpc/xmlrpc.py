@@ -14,23 +14,23 @@ class XmlRpcSerializer(BaseSerializer):
         self.allow_none = allow_none
         self.use_builtin_types = use_builtin_types
 
-    def prepare_request_headers(self):
+    def prepare_request_headers(self, unused_params):
         return {
             'Content-Type': 'text/xml',
             'Accept': 'text/xml',
         }
-
-    def process_response_headers(self, headers):
-        ct = headers['Content-Type']
-        if ct != 'text/xml':
-            raise ValueError("Invalid response content type '{}'".format(ct))
 
     def dumps(self, params, methodname):
         return xmlrpc.client.dumps(
             params, methodname=methodname, encoding=self.encoding,
             allow_none=self.allow_none)
 
-    def loads(self, data, unused_ct):
+    def process_response_headers(self, response_headers):
+        ct = response_headers['Content-Type']
+        if ct != 'text/xml':
+            raise ValueError("Invalid response content type '{}'".format(ct))
+
+    def loads(self, data, unused_response_headers):
         return xmlrpc.client.loads(
             data, use_builtin_types=self.use_builtin_types)[0][0]
 

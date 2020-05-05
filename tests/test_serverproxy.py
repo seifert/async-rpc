@@ -12,21 +12,21 @@ class Serializer(BaseSerializer):
     def initialize(self, dummy_param=None):
         self.dummy_param = dummy_param
 
-    def prepare_request_headers(self):
+    def prepare_request_headers(self, unused_params):
         return {
             'Content-Type': 'application/x.foo',
             'Accept': 'application/x.foo',
         }
 
-    def process_response_headers(self, headers):
-        if headers['Content-Type'] != 'application/x.foo':
-            raise ValueError('Invalid content type')
-
     def dumps(self, params, methodname):
         return {'method': methodname, 'args': params}
 
-    def loads(self, data, ct):
-        return (data['response'], ct)
+    def process_response_headers(self, response_headers):
+        if response_headers['Content-Type'] != 'application/x.foo':
+            raise ValueError('Invalid content type')
+
+    def loads(self, data, response_headers):
+        return (data['response'], response_headers['Content-Type'])
 
 
 class ServerProxy(BaseServerProxy):

@@ -19,11 +19,7 @@ class BaseSerializer(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def prepare_request_headers(self):
-        pass
-
-    @abc.abstractmethod
-    def process_response_headers(self, headers):
+    def prepare_request_headers(self, params):
         pass
 
     @abc.abstractmethod
@@ -31,7 +27,11 @@ class BaseSerializer(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def loads(self, data, ct):
+    def process_response_headers(self, response_headers):
+        pass
+
+    @abc.abstractmethod
+    def loads(self, data, response_headers):
         pass
 
 
@@ -75,22 +75,23 @@ class BaseServerProxy(object):
     def __getattr__(self, name):
         return functools.partial(self.call, name)
 
-    async def call(self, name, *args):
+    async def call(self, name, *params):
         try:
-            data = self.serializer.dumps(args, name)
             headers = {
                 'User-Agent': self.user_agent,
                 'Host': self.host,
                 'Connection': 'close',
             }
-            headers.update(self.serializer.prepare_request_headers())
+            request_headers = self.serializer.prepare_request_headers(params)
+            if request_headers:
+                headers.update(request_headers)
+            data = self.serializer.dumps(params, name)
             async with async_timeout.timeout(self.timeout):
                 response = await self.session.post(
                     self.uri, data=data, headers=headers)
                 data = await response.read()
             self.serializer.process_response_headers(response.headers)
-            result = self.serializer.loads(
-                data, response.headers.get('Content-Type'))
+            result = self.serializer.loads(data, response.headers)
         except asyncio.TimeoutError:
             raise asyncio.TimeoutError('Timeout error')
         return result
