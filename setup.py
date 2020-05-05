@@ -6,7 +6,7 @@ with open('README.rst', 'rt') as f:
 
 setup(
     name='async-rpc',
-    version='1.0.0a2',
+    version='1.0.0a3',
     author='Jan Seifert',
     author_email='jan.seifert@fotkyzcest.net',
     description='Non-blocking XML-RPC client for Python',
