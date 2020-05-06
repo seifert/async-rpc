@@ -8,7 +8,7 @@ from .xmlrpc import XmlRpcServerProxy
 
 __all__ = ['BaseSerializer', 'BaseServerProxy', 'XmlRpcServerProxy']
 
-__version__ = '1.0.0a4'
+__version__ = '1.0.0a5'
 
 
 for extension_pkg_info in pkgutil.iter_modules():
