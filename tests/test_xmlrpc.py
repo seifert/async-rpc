@@ -1,4 +1,5 @@
 
+import asyncio
 import socket
 import threading
 import xmlrpc.server
@@ -39,3 +40,11 @@ def xml_rpc_server():
 async def test_xml_rpc_server_proxy(xml_rpc_server):
     proxy = XmlRpcServerProxy('http://{}:{}/'.format(*xml_rpc_server))
     assert await proxy.sum(3, 7) == 10
+
+
+@pytest.mark.asyncio
+async def test_xml_rpc_server_proxy_fail_when_timeout(xml_rpc_server):
+    proxy = XmlRpcServerProxy(
+        'http://{}:{}/'.format(*xml_rpc_server), timeout=0.0)
+    with pytest.raises(asyncio.TimeoutError):
+        await proxy.sum(3, 7)

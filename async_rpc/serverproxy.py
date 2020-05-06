@@ -1,6 +1,5 @@
 
 import abc
-import asyncio
 import functools
 import urllib.parse
 
@@ -76,22 +75,18 @@ class BaseServerProxy(object):
         return functools.partial(self.call, name)
 
     async def call(self, name, *params):
-        try:
-            headers = {
-                'User-Agent': self.user_agent,
-                'Host': self.host,
-                'Connection': 'close',
-            }
-            request_headers = self.serializer.prepare_request_headers(params)
-            if request_headers:
-                headers.update(request_headers)
-            data = self.serializer.dumps(params, name)
-            async with async_timeout.timeout(self.timeout):
-                response = await self.session.post(
-                    self.uri, data=data, headers=headers)
-                data = await response.read()
-            self.serializer.process_response_headers(response.headers)
-            result = self.serializer.loads(data, response.headers)
-        except asyncio.TimeoutError:
-            raise asyncio.TimeoutError('Timeout error')
-        return result
+        headers = {
+            'User-Agent': self.user_agent,
+            'Host': self.host,
+            'Connection': 'close',
+        }
+        request_headers = self.serializer.prepare_request_headers(params)
+        if request_headers:
+            headers.update(request_headers)
+        data = self.serializer.dumps(params, name)
+        async with async_timeout.timeout(self.timeout):
+            response = await self.session.post(
+                self.uri, data=data, headers=headers)
+            data = await response.read()
+        self.serializer.process_response_headers(response.headers)
+        return self.serializer.loads(data, response.headers)
