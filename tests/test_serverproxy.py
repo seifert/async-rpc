@@ -83,7 +83,8 @@ def test_base_server_proxy_session():
         connector=m_tcp_connector.return_value,
         version=aiohttp.HttpVersion10,
         timeout=m_client_timeout.return_value,
-        raise_for_status=True)
+        raise_for_status=True,
+        skip_auto_headers=['Accept-Encoding'])
 
 
 @pytest.mark.asyncio
@@ -124,7 +125,6 @@ async def test_base_server_call_method():
             'headers': {
                 'User-Agent': 'Python async-rpc',
                 'Host': 'rpc.example.com',
-                'Connection': 'close',
                 'Content-Type': 'application/x.foo',
                 'Accept': 'application/x.foo',
             },
