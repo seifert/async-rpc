@@ -1,7 +1,7 @@
 
 import xmlrpc.client
 
-from . import BaseSerializer, BaseServerProxy
+from .serverproxy import BaseSerializer, BaseServerProxy
 
 __all__ = ['XmlRpcServerProxy']
 
