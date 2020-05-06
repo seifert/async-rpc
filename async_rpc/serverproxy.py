@@ -38,9 +38,16 @@ class BaseServerProxy(object):
 
     serializer_cls = BaseSerializer
 
+    _http_versions = {
+        None: aiohttp.HttpVersion10,
+        '1.0': aiohttp.HttpVersion10,
+        '1.1': aiohttp.HttpVersion11,
+    }
+
     def __init__(
             self, uri, timeout=None, max_clients=None, user_agent=None,
-            use_dns_cache=None, ttl_dns_cache=None, **kwargs):
+            use_dns_cache=None, ttl_dns_cache=None, http_version=None,
+            keepalive_timeout=None, **kwargs):
         self.uri = uri
         self.host = urllib.parse.urlparse(uri).netloc
         self.timeout = 1.0 if timeout is None else timeout
@@ -49,8 +56,12 @@ class BaseServerProxy(object):
             'Python async-rpc' if user_agent is None else user_agent)
         self.use_dns_cache = True if use_dns_cache is None else use_dns_cache
         self.ttl_dns_cache = 10.0 if ttl_dns_cache is None else ttl_dns_cache
-        self.keepalive_timeout = None
-        self.http_version = aiohttp.HttpVersion10
+        self.keepalive_timeout = keepalive_timeout
+        try:
+            self.http_version = self._http_versions[http_version]
+        except KeyError:
+            raise ValueError(
+                'Unsupported HTTP version {}'.format(http_version))
         self.serializer = self.serializer_cls(**kwargs)
 
     @property
@@ -67,6 +78,7 @@ class BaseServerProxy(object):
                 version=self.http_version,
                 timeout=aiohttp.ClientTimeout(),
                 raise_for_status=True,
+                skip_auto_headers=['Accept-Encoding'],
             )
             self.__dict__['session'] = session
         return self.__dict__['session']
@@ -78,7 +90,6 @@ class BaseServerProxy(object):
         headers = {
             'User-Agent': self.user_agent,
             'Host': self.host,
-            'Connection': 'close',
         }
         request_headers = self.serializer.prepare_request_headers(params)
         if request_headers:
