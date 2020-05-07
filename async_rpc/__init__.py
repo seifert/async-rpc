@@ -18,7 +18,7 @@ for extension_pkg_info in pkgutil.iter_modules():
         del extension_pkg_info
         continue
     extension_pkg = importlib.import_module(extension_name)
-    for obj_name in extension_pkg.__all__:
+    for obj_name in getattr(extension_pkg, '__all__', []):
         async_rpc_pkg = sys.modules[__package__]
         setattr(async_rpc_pkg, obj_name, getattr(extension_pkg, obj_name))
         async_rpc_pkg.__all__.append(obj_name)
