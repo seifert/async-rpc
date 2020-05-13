@@ -1,12 +1,18 @@
 
+from pathlib import Path
+
 from setuptools import setup
 
 with open('README.rst', 'rt') as f:
     long_description = f.read()
 
+version = {}
+with open(str(Path(__file__).parent / 'async_rpc' / 'version.py')) as fp:
+    exec(fp.read(), version)
+
 setup(
     name='async-rpc',
-    version='1.0.0a8',
+    version=version['__version__'],
     author='Jan Seifert',
     author_email='jan.seifert@fotkyzcest.net',
     description='Non-blocking XML-RPC client for Python',

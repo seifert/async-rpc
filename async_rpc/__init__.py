@@ -4,12 +4,12 @@ import pkgutil
 import sys
 
 from .serverproxy import BaseSerializer, BaseServerProxy
+from .version import __version__ as _version
 from .xmlrpc import XmlRpcServerProxy
 
 __all__ = ['BaseSerializer', 'BaseServerProxy', 'XmlRpcServerProxy']
 
-__version__ = '1.0.0a8'
-
+__version__ = _version
 
 for extension_pkg_info in pkgutil.iter_modules():
     extension_name = extension_pkg_info[1]
