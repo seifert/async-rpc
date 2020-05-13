@@ -63,6 +63,19 @@ def test_base_server_proxy_constructor(proxy_kwargs, expected):
     assert isinstance(proxy.serializer, Serializer)
 
 
+@pytest.mark.parametrize('http_version, expected', [
+    (None, aiohttp.HttpVersion10), ('1.0', aiohttp.HttpVersion10),
+    ('1.1', aiohttp.HttpVersion11)])
+def test_base_server_proxy_constructor_http_version(http_version, expected):
+    proxy = ServerProxy('https://example.com/RPC2', http_version=http_version)
+    assert proxy.http_version == expected
+
+
+def test_base_server_proxy_constructor_fail_when_invalid_http_version():
+    with pytest.raises(ValueError):
+        ServerProxy('https://example.com/RPC2', http_version='2.0')
+
+
 def test_base_server_proxy_session():
     proxy = ServerProxy('https://rpc.example.com/RPC2')
     assert 'session' not in vars(proxy)
