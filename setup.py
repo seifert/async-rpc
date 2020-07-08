@@ -1,21 +1,30 @@
 
+import sys
+
 from pathlib import Path
+from runpy import run_path
 
 from setuptools import setup
 
-with open('README.rst', 'rt') as f:
-    long_description = f.read()
+description = 'Library for launching tasks in parallel environment'
 
-version = {}
-with open(str(Path(__file__).parent / 'async_rpc' / 'version.py')) as fp:
-    exec(fp.read(), version)
+try:
+    with open('README.rst', 'rt') as f:
+        long_description = f.read()
+except Exception:
+    long_description = description
+
+version_file = Path(__file__).parent / 'async_rpc' / 'version.py'
+if sys.version_info < (3, 6):
+    version_file = str(version_file)
+version = run_path(version_file)['__version__']
 
 setup(
     name='async-rpc',
-    version=version['__version__'],
+    version=version,
     author='Jan Seifert',
     author_email='jan.seifert@fotkyzcest.net',
-    description='Non-blocking XML-RPC client for Python',
+    description=description,
     long_description=long_description,
     long_description_content_type='text/x-rst',
     license='BSD',
